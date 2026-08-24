@@ -32,44 +32,4 @@ Expense_Tracker/
 │   └── routes/          # API route handlers
 ```
 
----
-
-## 🚀 Getting Started
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
-```
-
-### 2. Configure Backend Environment
-Create a `.env` file in the `server` directory based on `.env.example`:
-```bash
-cd server
-cp .env.example .env
-```
-Fill in your MongoDB connection string and JWT secret:
-```env
-PORT=3000
-DATABASE_URL=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-```
-
-### 3. Install Dependencies & Run
-
-#### Server:
-```bash
-cd server
-npm install
-npm start # or node server.js
-```
-
-#### Client:
-```bash
-cd client
-npm install
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser.
 
