@@ -1,14 +1,19 @@
 import mongoose from "mongoose";
+
 const groupSchema = new mongoose.Schema({
     name: {
-        type:String,
+        type: String,
         required: true
     },
-    members:{
-        type:[mongoose.Schema.Types.ObjectId],
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
-})
+    },
+    members: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
+}, { timestamps: true });
 
-const Group = mongoose.model("Group",groupSchema)
-export default Group
+const Group = mongoose.model("Group", groupSchema);
+export default Group;
