@@ -9,7 +9,7 @@ const ExpenseItem = ({ expense, onEdit, onDelete, isOwner }) => {
       </div>
       <div className="expense-item__right">
         <div className="expense-item__amount-section">
-          <div className="expense-item__amount">${Number(expense.totalAmount).toFixed(2)}</div>
+          <div className="expense-item__amount">₹{Number(expense.totalAmount).toFixed(2)}</div>
           <div className="expense-item__paid-by">Paid by: {expense.paidBy?.name || 'Unknown'}</div>
         </div>
         {isOwner && (
