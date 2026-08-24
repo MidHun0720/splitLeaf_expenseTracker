@@ -1,0 +1,123 @@
+.signup-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  padding: 20px;
+}
+
+.signup-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.signup-card:hover {
+  border-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.signup-card__header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.signup-card__header h1 {
+  color: var(--text-primary);
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.signup-card__header p {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.signup-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.signup-card__input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  width: 100%;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.signup-card__input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 237, 100, 0.15);
+}
+
+.signup-card__input::placeholder {
+  color: var(--text-muted);
+}
+
+.signup-card__button {
+  background: var(--accent);
+  color: #001e2b;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  padding: 12px 24px;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 8px;
+  width: 100%;
+  font-size: 1rem;
+}
+
+.signup-card__button:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.signup-card__button--loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.signup-card__error {
+  color: var(--danger);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.signup-card__footer {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.signup-card__link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.signup-card__link:hover {
+  text-decoration: underline;
+  color: var(--accent-hover);
+}
+
+@media (max-width: 480px) {
+  .signup-card {
+    padding: 32px 24px;
+  }
+}

@@ -1,0 +1,33 @@
+.balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.balance-item:last-child {
+  border-bottom: none;
+}
+
+.balance-item__name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.balance-item__amount {
+  font-weight: bold;
+}
+
+.balance-item__amount--positive {
+  color: var(--success);
+}
+
+.balance-item__amount--negative {
+  color: var(--danger);
+}
+
+.balance-item__amount--zero {
+  color: var(--text-muted);
+  font-weight: normal;
+}
