@@ -31,3 +31,79 @@
   color: var(--text-muted);
   font-weight: normal;
 }
+
+/* Pairwise Debt Item Styles */
+.debt-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.debt-item:hover {
+  border-color: var(--border-light);
+}
+
+.debt-item--you-owe {
+  border-left: 4px solid var(--danger);
+}
+
+.debt-item--you-are-owed {
+  border-left: 4px solid var(--success);
+}
+
+.debt-item__statement {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.debt-item__person {
+  font-weight: 600;
+}
+
+.debt-item__person--you {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.debt-item__owes {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.debt-item__email {
+  margin-top: 2px;
+}
+
+.debt-item__action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.debt-item__amount {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.btn-settle-mini {
+  background: var(--accent);
+  color: #0b1f1a;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-settle-mini:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}

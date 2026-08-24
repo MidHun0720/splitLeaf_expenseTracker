@@ -14,7 +14,10 @@ app.use('/api/auth', authroutes)
 app.use('/api/groups',grouproutes)
 app.use('/api/expenses',expenseRoutes)
 app.use('/api/settlements', settlementRoutes)
+const PORT = process.env.PORT || 3000
 await connectDB()
-app.listen(process.env.PORT,()=>{
-    console.log(`server is running on ${process.env.PORT}` )
+app.listen(PORT, () => {
+    console.log(`server is running on ${PORT}`)
 })
+
+export default app

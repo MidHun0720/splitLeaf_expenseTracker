@@ -96,10 +96,61 @@
   border-bottom: none;
 }
 
+.group-detail__members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge-creator {
+  color: #f59e0b;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-left: 4px;
+}
+
+.badge-admin {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
 .badge-you {
   color: var(--accent);
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.debts-container {
+  margin-bottom: 28px;
+}
+
+.debt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.net-balances-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+}
+
+.section-subtitle {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .btn-secondary {

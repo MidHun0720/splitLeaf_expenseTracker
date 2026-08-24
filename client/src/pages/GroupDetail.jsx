@@ -4,7 +4,7 @@ import API from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import ExpenseItem from '../components/ExpenseItem';
-import BalanceItem from '../components/BalanceItem';
+import BalanceItem, { DebtItem } from '../components/BalanceItem';
 import './GroupDetail.css';
 
 const GroupDetail = () => {
@@ -14,6 +14,7 @@ const GroupDetail = () => {
   const [group, setGroup] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [balances, setBalances] = useState({});
+  const [debts, setDebts] = useState([]);
   const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,7 +50,17 @@ const GroupDetail = () => {
       
       setGroup(groupRes.data);
       setExpenses(expensesRes.data || []);
-      setBalances(balancesRes.data || {});
+      
+      if (balancesRes.data) {
+        if (balancesRes.data.balances && balancesRes.data.debts) {
+          setBalances(balancesRes.data.balances);
+          setDebts(balancesRes.data.debts);
+        } else {
+          setBalances(balancesRes.data);
+          setDebts([]);
+        }
+      }
+      
       setSettlements(settlementsRes.data || []);
       setError(null);
     } catch (err) {
@@ -123,7 +134,16 @@ const GroupDetail = () => {
   };
 
   const handleRemoveMember = async (member) => {
-    if (window.confirm(`Remove ${member.name} (${member.email}) from group?`)) {
+    if (!isCreator) {
+      alert('Only the person who created the group can kick members.');
+      return;
+    }
+    if (isMemberCreator(member)) {
+      alert('The group creator cannot be removed from the group.');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to kick ${member.name} (${member.email}) from the group?`)) {
       try {
         await API.post(`/groups/${groupId}/remove-member`, { email: member.email });
         fetchAllData();
@@ -131,6 +151,12 @@ const GroupDetail = () => {
         alert(err.response?.data?.error || err.response?.data?.message || 'Failed to remove member');
       }
     }
+  };
+
+  const handleQuickSettle = (targetUserId, amount) => {
+    setSettleTo(targetUserId);
+    setSettleAmount(amount);
+    setShowSettleModal(true);
   };
 
   const handleSettleUp = async (e) => {
@@ -160,15 +186,32 @@ const GroupDetail = () => {
 
   const isCurrentUser = (memberOrId) => {
     if (!user) return false;
+    const currentUserId = user.id || user._id;
     if (typeof memberOrId === 'object' && memberOrId !== null) {
       return (
-        memberOrId._id === user.id ||
-        memberOrId._id === user._id ||
-        memberOrId.email === user.email
+        memberOrId._id === currentUserId ||
+        (user.email && memberOrId.email === user.email)
       );
     }
-    return memberOrId === user.id || memberOrId === user._id;
+    return memberOrId === currentUserId;
   };
+
+  const isMemberCreator = (member) => {
+    if (!group || !member) return false;
+    if (group.createdBy) {
+      const creatorId = typeof group.createdBy === 'object' ? group.createdBy._id : group.createdBy;
+      return member._id === creatorId;
+    }
+    return group.members?.[0]?._id === member._id;
+  };
+
+  const isCreator = Boolean(
+    group?.createdBy
+      ? (typeof group.createdBy === 'object' 
+          ? isCurrentUser(group.createdBy) 
+          : (group.createdBy === user?.id || group.createdBy === user?._id))
+      : (group?.members?.length > 0 && isCurrentUser(group.members[0]))
+  );
 
   if (loading) return <div className="group-detail__loading">Loading group details...</div>;
   if (error) return <div className="group-detail__error">{error}</div>;
@@ -198,7 +241,7 @@ const GroupDetail = () => {
           className={`group-detail__tab ${activeTab === 'balances' ? 'group-detail__tab--active' : ''}`}
           onClick={() => setActiveTab('balances')}
         >
-          Balances
+          Balances {debts.length > 0 && `(${debts.length} pending)`}
         </button>
         <button 
           className={`group-detail__tab ${activeTab === 'settlements' ? 'group-detail__tab--active' : ''}`}
@@ -248,20 +291,49 @@ const GroupDetail = () => {
         {activeTab === 'balances' && (
           <div>
             <div className="group-detail__section-header">
-              <h2>Group Balances</h2>
+              <h2>Who Owes Who</h2>
+              <button className="btn-primary" onClick={() => setShowSettleModal(true)}>Settle Up</button>
             </div>
-            <div className="balance-list">
-              {Object.keys(balances).length === 0 ? (
-                <p className="text-muted">No balances to display.</p>
+            
+            <div className="debts-container">
+              {debts.length === 0 ? (
+                <div className="empty-notice">
+                  <p className="text-muted">🎉 All debts are settled! Nobody owes anyone in this group.</p>
+                </div>
               ) : (
-                Object.entries(balances).map(([userId, amount]) => {
-                  const member = group.members?.find(m => m._id === userId);
-                  if (!member || amount === 0) return null;
-                  return (
-                    <BalanceItem key={userId} name={member.name} amount={amount} />
-                  );
-                })
+                <div className="debt-list">
+                  {debts.map((debt, index) => (
+                    <DebtItem 
+                      key={`${debt.from}-${debt.to}-${index}`} 
+                      debt={debt} 
+                      currentUserId={user?.id || user?._id}
+                      onSettle={handleQuickSettle}
+                    />
+                  ))}
+                </div>
               )}
+            </div>
+
+            <div className="net-balances-section">
+              <h3 className="section-subtitle">Net Balances Summary</h3>
+              <div className="balance-list">
+                {Object.keys(balances).length === 0 ? (
+                  <p className="text-muted">No balances to display.</p>
+                ) : (
+                  Object.entries(balances).map(([userId, amount]) => {
+                    const member = group.members?.find(m => m._id === userId);
+                    if (!member) return null;
+                    return (
+                      <BalanceItem 
+                        key={userId} 
+                        name={member.name} 
+                        amount={amount} 
+                        isYou={isCurrentUser(member)}
+                      />
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -292,26 +364,34 @@ const GroupDetail = () => {
       </div>
 
       <div className="group-detail__members card mt-4">
-        <h3>Group Members ({group.members?.length || 0})</h3>
+        <div className="group-detail__members-header">
+          <h3>Group Members ({group.members?.length || 0})</h3>
+          {isCreator && <span className="badge-admin">You are the Group Creator</span>}
+        </div>
         <div className="member-list">
-          {group.members?.map(member => (
-            <div key={member._id} className="group-detail__member-item">
-              <div>
-                <strong>{member.name}</strong>{' '}
-                <span className="text-muted">({member.email})</span>
-                {isCurrentUser(member) && <span className="badge-you"> (You)</span>}
+          {group.members?.map(member => {
+            const isMemberGroupCreator = isMemberCreator(member);
+            const isYou = isCurrentUser(member);
+            return (
+              <div key={member._id} className="group-detail__member-item">
+                <div className="member-info">
+                  <strong>{member.name}</strong>{' '}
+                  <span className="text-muted">({member.email})</span>
+                  {isMemberGroupCreator && <span className="badge-creator"> 👑 Creator</span>}
+                  {isYou && <span className="badge-you"> (You)</span>}
+                </div>
+                {isCreator && !isMemberGroupCreator && !isYou && (
+                  <button 
+                    className="btn-danger-small" 
+                    onClick={() => handleRemoveMember(member)}
+                    title={`Kick ${member.name} from group`}
+                  >
+                    &times;
+                  </button>
+                )}
               </div>
-              {!isCurrentUser(member) && (
-                <button 
-                  className="btn-danger-small" 
-                  onClick={() => handleRemoveMember(member)}
-                  title="Remove Member"
-                >
-                  &times;
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

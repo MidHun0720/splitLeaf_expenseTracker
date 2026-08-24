@@ -16,9 +16,11 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           const res = await API.get('/auth/profile');
-          // If we have a stored user, keep it; otherwise set from profile
-          if (!user) {
-            setUser({ id: res.data.user.id });
+          if (res.data?.user) {
+            const u = res.data.user;
+            const userData = { id: u.id || u._id, name: u.name, email: u.email };
+            localStorage.setItem('user', JSON.stringify(userData));
+            setUser(userData);
           }
         } catch (error) {
           console.error("Token invalid", error);
@@ -35,10 +37,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await API.post('/auth/login', { email, password });
-    const { token: newToken, name, email: userEmail } = res.data;
+    const { token: newToken, name, email: userEmail, id } = res.data;
     localStorage.setItem('token', newToken);
     setToken(newToken);
-    const userData = { name, email: userEmail };
+    const userData = { id: id || res.data._id, name, email: userEmail };
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return res;
