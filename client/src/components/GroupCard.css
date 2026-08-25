@@ -2,34 +2,55 @@
   background: var(--bg-card);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  border-top: 4px solid var(--accent);
+  position: relative;
   padding: 24px;
   box-shadow: var(--shadow);
   cursor: pointer;
   transition: var(--transition);
+  overflow: hidden;
+}
+
+.group-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent) 0%, #38bdf8 100%);
+  opacity: 0.8;
+  transition: var(--transition);
 }
 
 .group-card:hover {
-  border-color: var(--accent-dark);
-  border-top-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  background: var(--bg-card-hover);
+  border-color: var(--border-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(16, 185, 129, 0.1);
+}
+
+.group-card:hover::before {
+  height: 4px;
+  opacity: 1;
 }
 
 .group-card__title {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   color: var(--text-primary);
-  font-size: 1.25rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .group-card__subtitle {
   margin: 0;
-  color: var(--text-muted);
-  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
 .group-card__icon {
-  margin-right: 6px;
+  font-size: 1.1rem;
 }
