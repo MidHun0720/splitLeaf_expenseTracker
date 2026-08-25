@@ -67,6 +67,48 @@
   font-weight: 600;
 }
 
+.expense-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.expense-search-input {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+}
+
+.category-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-pill {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.category-pill:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.category-pill--active {
+  background: var(--accent);
+  color: #0b1f1a;
+  border-color: var(--accent);
+}
+
 .group-detail__members {
   background: var(--bg-card);
   border-radius: var(--radius-lg);

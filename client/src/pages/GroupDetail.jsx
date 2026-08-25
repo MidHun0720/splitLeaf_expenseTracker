@@ -7,6 +7,17 @@ import ExpenseItem from '../components/ExpenseItem';
 import BalanceItem, { DebtItem } from '../components/BalanceItem';
 import './GroupDetail.css';
 
+const CATEGORIES = [
+  { id: 'All', label: 'All' },
+  { id: 'Food', label: '🍔 Food' },
+  { id: 'Groceries', label: '🛒 Groceries' },
+  { id: 'Transport', label: '🚗 Transport' },
+  { id: 'Utilities', label: '💡 Utilities' },
+  { id: 'Entertainment', label: '🎬 Entertainment' },
+  { id: 'Shopping', label: '🛍️ Shopping' },
+  { id: 'General', label: '📝 General' }
+];
+
 const GroupDetail = () => {
   const { groupId } = useParams();
   const { user } = useAuth();
@@ -25,18 +36,74 @@ const GroupDetail = () => {
   const [showSettleModal, setShowSettleModal] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
-  
 
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('General');
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [expenseSplit, setExpenseSplit] = useState([]);
-  
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const [newMemberEmail, setNewMemberEmail] = useState('');
   
-
   const [settleTo, setSettleTo] = useState('');
   const [settleAmount, setSettleAmount] = useState('');
+
+  const computeDebts = (balancesMap, membersList = []) => {
+    const memberMap = {};
+    membersList.forEach(m => {
+      if (m && m._id) memberMap[m._id.toString()] = m;
+    });
+
+    const debtors = [];
+    const creditors = [];
+
+    for (const [userId, net] of Object.entries(balancesMap || {})) {
+      const rounded = Math.round(Number(net) * 100) / 100;
+      if (rounded < -0.01) {
+        debtors.push({ userId, amount: -rounded });
+      } else if (rounded > 0.01) {
+        creditors.push({ userId, amount: rounded });
+      }
+    }
+
+    debtors.sort((a, b) => b.amount - a.amount);
+    creditors.sort((a, b) => b.amount - a.amount);
+
+    const calculatedDebts = [];
+    let dIdx = 0;
+    let cIdx = 0;
+
+    const debtorList = debtors.map(d => ({ ...d }));
+    const creditorList = creditors.map(c => ({ ...c }));
+
+    while (dIdx < debtorList.length && cIdx < creditorList.length) {
+      const debtor = debtorList[dIdx];
+      const creditor = creditorList[cIdx];
+      const settleAmount = Math.min(debtor.amount, creditor.amount);
+
+      if (settleAmount > 0.01) {
+        const roundedAmount = Math.round(settleAmount * 100) / 100;
+        calculatedDebts.push({
+          from: debtor.userId,
+          fromUser: memberMap[debtor.userId] || { _id: debtor.userId, name: 'Member', email: '' },
+          to: creditor.userId,
+          toUser: memberMap[creditor.userId] || { _id: creditor.userId, name: 'Member', email: '' },
+          amount: roundedAmount
+        });
+      }
+
+      debtor.amount -= settleAmount;
+      creditor.amount -= settleAmount;
+
+      if (debtor.amount < 0.01) dIdx++;
+      if (creditor.amount < 0.01) cIdx++;
+    }
+
+    return calculatedDebts;
+  };
 
   const fetchAllData = async () => {
     try {
@@ -48,19 +115,28 @@ const GroupDetail = () => {
         API.get(`/settlements/group/${groupId}`)
       ]);
       
-      setGroup(groupRes.data);
+      const groupData = groupRes.data;
+      setGroup(groupData);
       setExpenses(expensesRes.data || []);
       
+      let parsedBalances = {};
+      let parsedDebts = [];
+
       if (balancesRes.data) {
-        if (balancesRes.data.balances && balancesRes.data.debts) {
-          setBalances(balancesRes.data.balances);
-          setDebts(balancesRes.data.debts);
+        if (balancesRes.data.balances && Array.isArray(balancesRes.data.debts)) {
+          parsedBalances = balancesRes.data.balances;
+          parsedDebts = balancesRes.data.debts;
         } else {
-          setBalances(balancesRes.data);
-          setDebts([]);
+          parsedBalances = balancesRes.data;
         }
       }
-      
+
+      if (parsedDebts.length === 0 && Object.keys(parsedBalances).length > 0) {
+        parsedDebts = computeDebts(parsedBalances, groupData?.members || []);
+      }
+
+      setBalances(parsedBalances);
+      setDebts(parsedDebts);
       setSettlements(settlementsRes.data || []);
       setError(null);
     } catch (err) {
@@ -78,6 +154,8 @@ const GroupDetail = () => {
     setEditingExpense(null);
     setExpenseDesc('');
     setExpenseAmount('');
+    setExpenseCategory('General');
+    setExpenseDate(new Date().toISOString().split('T')[0]);
     setExpenseSplit(group?.members?.map(m => m._id) || []);
     setShowExpenseModal(true);
   };
@@ -94,6 +172,8 @@ const GroupDetail = () => {
         group: groupId,
         description: expenseDesc,
         totalAmount: Number(expenseAmount),
+        category: expenseCategory,
+        date: expenseDate,
         splitAmong: expenseSplit
       };
       
@@ -184,6 +264,37 @@ const GroupDetail = () => {
     );
   };
 
+  const exportToCSV = () => {
+    if (expenses.length === 0) {
+      alert('No expenses to export');
+      return;
+    }
+
+    const headers = ['Date', 'Description', 'Category', 'Amount (INR)', 'Paid By', 'Split Among'];
+    const rows = expenses.map(exp => {
+      const dateStr = exp.date ? new Date(exp.date).toLocaleDateString('en-IN') : '';
+      const desc = `"${(exp.description || '').replace(/"/g, '""')}"`;
+      const cat = exp.category || 'General';
+      const amount = Number(exp.totalAmount || 0).toFixed(2);
+      const paidBy = `"${(exp.paidBy?.name || '').replace(/"/g, '""')}"`;
+      const splitList = Array.isArray(exp.splitAmong) 
+        ? exp.splitAmong.map(m => m?.name || '').join(', ')
+        : '';
+      const split = `"${splitList.replace(/"/g, '""')}"`;
+
+      return [dateStr, desc, cat, amount, paidBy, split].join(',');
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${group.name.replace(/\s+/g, '_')}_expenses.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const isCurrentUser = (memberOrId) => {
     if (!user) return false;
     const currentUserId = user.id || user._id;
@@ -213,6 +324,16 @@ const GroupDetail = () => {
       : (group?.members?.length > 0 && isCurrentUser(group.members[0]))
   );
 
+  const filteredExpenses = expenses.filter(exp => {
+    const matchesCategory = selectedCategory === 'All' || (exp.category || 'General') === selectedCategory;
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || 
+      exp.description?.toLowerCase().includes(query) ||
+      exp.paidBy?.name?.toLowerCase().includes(query) ||
+      (exp.category || 'General').toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
+
   if (loading) return <div className="group-detail__loading">Loading group details...</div>;
   if (error) return <div className="group-detail__error">{error}</div>;
   if (!group) return null;
@@ -225,6 +346,11 @@ const GroupDetail = () => {
           <p className="text-muted">{group.members?.length || 0} members</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {expenses.length > 0 && (
+            <button className="btn-secondary" onClick={exportToCSV} title="Download CSV Report">
+              📥 Export CSV
+            </button>
+          )}
           <button className="btn-primary" onClick={() => setShowMemberModal(true)}>+ Add Member</button>
           <Link to="/dashboard" className="btn-secondary">← Back to Groups</Link>
         </div>
@@ -255,16 +381,45 @@ const GroupDetail = () => {
         {activeTab === 'expenses' && (
           <div>
             <div className="group-detail__section-header">
-              <h2>Recent Expenses</h2>
+              <h2>Group Expenses</h2>
               <button className="btn-primary" onClick={openAddExpense}>+ Add Expense</button>
             </div>
+
+            {expenses.length > 0 && (
+              <div className="expense-toolbar">
+                <input 
+                  type="text" 
+                  className="input-primary expense-search-input" 
+                  placeholder="🔍 Search by description, paid by, or category..." 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                <div className="category-filter-pills">
+                  {CATEGORIES.map(cat => (
+                    <button 
+                      key={cat.id}
+                      type="button"
+                      className={`category-pill ${selectedCategory === cat.id ? 'category-pill--active' : ''}`}
+                      onClick={() => setSelectedCategory(cat.id)}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="expense-list">
               {expenses.length === 0 ? (
                 <div className="empty-notice">
                   <p className="text-muted">No expenses recorded yet. Add one above to split the cost!</p>
                 </div>
+              ) : filteredExpenses.length === 0 ? (
+                <div className="empty-notice">
+                  <p className="text-muted">No expenses match your search or filter.</p>
+                </div>
               ) : (
-                expenses.map(exp => (
+                filteredExpenses.map(exp => (
                   <ExpenseItem 
                     key={exp._id} 
                     expense={exp} 
@@ -273,6 +428,8 @@ const GroupDetail = () => {
                       setEditingExpense(exp);
                       setExpenseDesc(exp.description);
                       setExpenseAmount(exp.totalAmount);
+                      setExpenseCategory(exp.category || 'General');
+                      setExpenseDate(exp.date ? new Date(exp.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
                       setExpenseSplit(
                         Array.isArray(exp.splitAmong)
                           ? exp.splitAmong.map(s => (typeof s === 'object' ? s._id : s))
@@ -413,6 +570,32 @@ const GroupDetail = () => {
             />
           </div>
           <div>
+            <label className="field-label">Category</label>
+            <select 
+              className="input-primary"
+              value={expenseCategory}
+              onChange={e => setExpenseCategory(e.target.value)}
+            >
+              <option value="Food">🍔 Food & Dining</option>
+              <option value="Groceries">🛒 Groceries</option>
+              <option value="Transport">🚗 Transportation</option>
+              <option value="Utilities">💡 Utilities & Bills</option>
+              <option value="Entertainment">🎬 Entertainment</option>
+              <option value="Shopping">🛍️ Shopping</option>
+              <option value="General">📝 General</option>
+            </select>
+          </div>
+          <div>
+            <label className="field-label">Expense Date</label>
+            <input 
+              type="date"
+              className="input-primary"
+              value={expenseDate}
+              onChange={e => setExpenseDate(e.target.value)}
+              required
+            />
+          </div>
+          <div>
             <label className="field-label">Total Amount (₹)</label>
             <input 
               type="number" 
@@ -444,7 +627,6 @@ const GroupDetail = () => {
         </form>
       </Modal>
 
-
       <Modal 
         isOpen={showMemberModal} 
         onClose={() => setShowMemberModal(false)} 
@@ -465,7 +647,6 @@ const GroupDetail = () => {
           <button type="submit" className="btn-primary">Add to Group</button>
         </form>
       </Modal>
-
 
       <Modal 
         isOpen={showSettleModal} 

@@ -6,16 +6,21 @@ import Settlement from '../models/Settlement.js'
 const router = express.Router()
 
 router.post('/create', authenticateToken, async (req, res) => {
-    try{
-        const {group, description, totalAmount, splitAmong} = req.body
+    try {
+        const { group, description, totalAmount, splitAmong, category, date } = req.body
         const newExpense = await Expense.create({
-            group, description, totalAmount, splitAmong,
+            group,
+            description,
+            totalAmount,
+            splitAmong,
+            category: category || 'General',
+            date: date || Date.now(),
             paidBy: req.user.id
         })
         res.status(201).json(newExpense)
     }
-    catch(err){
-        res.status(500).json({err:err.message})
+    catch (err) {
+        res.status(500).json({ error: err.message })
     }
 })
 
@@ -124,53 +129,64 @@ router.get('/group/:groupId/balances', authenticateToken, async (req, res) => {
 router.get('/group/:groupId', authenticateToken, async (req, res) => {
   try {
     const { groupId } = req.params
-    const expense = await Expense.find({group:groupId}).populate('paidBy','name email')
+    const expenses = await Expense.find({ group: groupId })
+      .populate('paidBy', 'name email')
+      .populate('splitAmong', 'name email')
+      .sort({ date: -1, createdAt: -1 })
 
-    res.status(200).json(expense)
+    res.status(200).json(expenses)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
 })
 
 router.delete('/:expenseId', authenticateToken, async (req, res) => {
-  try{
-      const {expenseId} = req.params
-      const expense = await Expense.findById(expenseId)
-      if(!expense){
-        return res.status(404).json({error:"Expense not found"})
-      }
-      if(!(expense.paidBy.toString()===req.user.id)){
-        return res.status(403).json({error:"Only the creater can deleted this expense"})
-      }
-      await Expense.findByIdAndDelete(expenseId)
-      res.status(200).json({ message: 'Successfully deleted' })
+  try {
+    const { expenseId } = req.params
+    const expense = await Expense.findById(expenseId)
+    if (!expense) {
+      return res.status(404).json({ error: "Expense not found" })
+    }
+    if (!(expense.paidBy.toString() === req.user.id)) {
+      return res.status(403).json({ error: "Only the creator can delete this expense" })
+    }
+    await Expense.findByIdAndDelete(expenseId)
+    res.status(200).json({ message: 'Successfully deleted' })
   }
-  catch(err){
-    res.status(500).json({error:err.message})
+  catch (err) {
+    res.status(500).json({ error: err.message })
   }
-
-
 })
 
 router.put('/:expenseId', authenticateToken, async (req, res) => {
-  try{
-    const {expenseId} = req.params
-    const {description, totalAmount, splitAmong} = req.body
+  try {
+    const { expenseId } = req.params
+    const { description, totalAmount, splitAmong, category, date } = req.body
     const expense = await Expense.findById(expenseId)
 
-    if(!expense){
-        return res.status(404).json({error:"Expense not found"})
-      }
-    if(!(expense.paidBy.toString()===req.user.id)){
-        return res.status(403).json({error:"Only the creater can deleted this expense"})
-      }
+    if (!expense) {
+      return res.status(404).json({ error: "Expense not found" })
+    }
+    if (!(expense.paidBy.toString() === req.user.id)) {
+      return res.status(403).json({ error: "Only the creator can edit this expense" })
+    }
 
-    const updatedExpense = await Expense.findByIdAndUpdate(expenseId, { description, totalAmount, splitAmong }, { new: true })
+    const updatedExpense = await Expense.findByIdAndUpdate(
+      expenseId, 
+      { 
+        description, 
+        totalAmount, 
+        splitAmong,
+        category: category || expense.category || 'General',
+        date: date || expense.date || Date.now()
+      }, 
+      { new: true }
+    )
 
     res.status(200).json(updatedExpense)
   }
-  catch(err){
-    res.status(500).json({error:err.message})
+  catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 
