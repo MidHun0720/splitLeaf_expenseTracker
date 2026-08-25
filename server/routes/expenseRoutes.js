@@ -30,7 +30,6 @@ router.get('/group/:groupId/balances', authenticateToken, async (req, res) => {
     const expenses = await Expense.find({ group: groupId }).populate('paidBy', 'name email').populate('splitAmong', 'name email')
     const balances = {}
 
-    // Initialize all group members with 0 balance
     group.members.forEach(member => {
       balances[member._id.toString()] = 0
     })
@@ -55,13 +54,11 @@ router.get('/group/:groupId/balances', authenticateToken, async (req, res) => {
       balances[toId] = (balances[toId] || 0) - settlement.amount
     })
 
-    // Map member details
     const memberMap = {}
     group.members.forEach(m => {
       memberMap[m._id.toString()] = { _id: m._id, name: m.name, email: m.email }
     })
 
-    // Also map any past participants from settlements/expenses
     expenses.forEach(e => {
       if (e.paidBy?._id) memberMap[e.paidBy._id.toString()] = { _id: e.paidBy._id, name: e.paidBy.name, email: e.paidBy.email }
       if (Array.isArray(e.splitAmong)) {
@@ -75,7 +72,6 @@ router.get('/group/:groupId/balances', authenticateToken, async (req, res) => {
       if (s.to?._id) memberMap[s.to._id.toString()] = { _id: s.to._id, name: s.to.name, email: s.to.email }
     })
 
-    // Separate debtors (< 0) and creditors (> 0)
     const debtors = []
     const creditors = []
 
@@ -89,7 +85,6 @@ router.get('/group/:groupId/balances', authenticateToken, async (req, res) => {
       }
     }
 
-    // Sort descending by amount for efficient matching
     debtors.sort((a, b) => b.amount - a.amount)
     creditors.sort((a, b) => b.amount - a.amount)
 

@@ -26,15 +26,15 @@ const GroupDetail = () => {
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   
-  // Expense Form State
+
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseSplit, setExpenseSplit] = useState([]);
   
-  // Member Form State
+
   const [newMemberEmail, setNewMemberEmail] = useState('');
   
-  // Settle Form State
+
   const [settleTo, setSettleTo] = useState('');
   const [settleAmount, setSettleAmount] = useState('');
 
@@ -353,7 +353,7 @@ const GroupDetail = () => {
                 settlements.map(settle => (
                   <div key={settle._id} className="settlement-card">
                     <p><strong>{settle.from?.name || 'Someone'}</strong> paid <strong>{settle.to?.name || 'Someone'}</strong></p>
-                    <p className="settlement-amount">${Number(settle.amount).toFixed(2)}</p>
+                    <p className="settlement-amount">₹{Number(settle.amount).toFixed(2)}</p>
                     <p className="text-muted text-sm">{new Date(settle.date).toLocaleDateString()}</p>
                   </div>
                 ))
@@ -395,7 +395,6 @@ const GroupDetail = () => {
         </div>
       </div>
 
-      {/* Expense Modal */}
       <Modal 
         isOpen={showExpenseModal} 
         onClose={() => setShowExpenseModal(false)} 
@@ -414,7 +413,7 @@ const GroupDetail = () => {
             />
           </div>
           <div>
-            <label className="field-label">Total Amount ($)</label>
+            <label className="field-label">Total Amount (₹)</label>
             <input 
               type="number" 
               step="0.01" 
@@ -445,7 +444,7 @@ const GroupDetail = () => {
         </form>
       </Modal>
 
-      {/* Member Modal */}
+
       <Modal 
         isOpen={showMemberModal} 
         onClose={() => setShowMemberModal(false)} 
@@ -467,7 +466,7 @@ const GroupDetail = () => {
         </form>
       </Modal>
 
-      {/* Settle Modal */}
+
       <Modal 
         isOpen={showSettleModal} 
         onClose={() => setShowSettleModal(false)} 
@@ -489,7 +488,7 @@ const GroupDetail = () => {
             </select>
           </div>
           <div>
-            <label className="field-label">Amount ($)</label>
+            <label className="field-label">Amount (₹)</label>
             <input 
               type="number" 
               step="0.01" 

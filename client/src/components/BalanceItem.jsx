@@ -12,7 +12,7 @@ export const DebtItem = ({ debt, currentUserId, onSettle }) => {
           <span className={`debt-item__person ${isYouDebtor ? 'debt-item__person--you' : ''}`}>
             {isYouDebtor ? 'You' : (debt.fromUser?.name || 'Member')}
           </span>
-          <span className="debt-item__owes"> owes </span>
+          <span className="debt-item__owes">{isYouDebtor ? ' owe ' : ' owes '}</span>
           <span className={`debt-item__person ${isYouCreditor ? 'debt-item__person--you' : ''}`}>
             {isYouCreditor ? 'You' : (debt.toUser?.name || 'Member')}
           </span>
@@ -25,7 +25,7 @@ export const DebtItem = ({ debt, currentUserId, onSettle }) => {
       </div>
       
       <div className="debt-item__action">
-        <span className="debt-item__amount">${Number(debt.amount).toFixed(2)}</span>
+        <span className="debt-item__amount">₹{Number(debt.amount).toFixed(2)}</span>
         {isYouDebtor && onSettle && (
           <button 
             type="button"
@@ -50,11 +50,11 @@ const BalanceItem = ({ name, amount, isYou }) => {
   let statusText = 'Settled up';
 
   if (isPositive) {
-    displayAmount = `+$${amount.toFixed(2)}`;
+    displayAmount = `+₹${amount.toFixed(2)}`;
     amountClass = 'balance-item__amount--positive';
     statusText = 'gets back in total';
   } else if (isNegative) {
-    displayAmount = `-$${Math.abs(amount).toFixed(2)}`;
+    displayAmount = `-₹${Math.abs(amount).toFixed(2)}`;
     amountClass = 'balance-item__amount--negative';
     statusText = 'owes in total';
   }
